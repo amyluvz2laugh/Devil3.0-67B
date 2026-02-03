@@ -20,7 +20,7 @@ const TERTIARY_MODEL = "mistralai/mistral-large";
 // ============================================
 async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
   const models = [PRIMARY_MODEL, BACKUP_MODEL, TERTIARY_MODEL];
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.RUNPOD_API_KEY; // <- Changed this too
   
   if (!apiKey) {
     throw new Error("No API key configured");
@@ -30,7 +30,7 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
     try {
       console.log(`🤖 Trying model: ${model}`);
       
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const response = await fetch(process.env.RUNPOD_ENDPOINT, { // <- YES, this line
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
           max_tokens: maxTokens
         })
       });
-      
+    
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`❌ ${model} failed:`, errorText);
@@ -366,3 +366,4 @@ app.listen(PORT, () => {
   console.log(`   Models: ${PRIMARY_MODEL}, ${BACKUP_MODEL}, ${TERTIARY_MODEL}`);
   console.log(`   API Key configured: ${process.env.OPENROUTER_API_KEY ? 'YES ✅' : 'NO ❌'}`);
 });
+
