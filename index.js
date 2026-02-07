@@ -141,7 +141,6 @@ async function getChatHistory(characterTags) {
   const charTag = Array.isArray(characterTags) ? characterTags[0] : characterTags;
   console.log("💬 Fetching chat history for character tag:", charTag);
   
-  // Query ChatWithCharacters by charactertags field (NOT the reference field)
   const result = await queryWixCMS("ChatWithCharacters", {
     charactertags: { $eq: charTag }
   }, 5);
@@ -165,6 +164,7 @@ async function getChatHistory(characterTags) {
   console.log("⚠️ No chat history found for this character");
   return [];
 }
+
 // ============================================
 // GET RELATED CHAPTERS FROM WIX
 // ============================================
@@ -221,142 +221,432 @@ async function getCatalystIntel(catalystTags) {
 }
 
 // ============================================
-// UPDATED DEVIL POV - WITH CATALYST CONTEXT
+// UNIFIED /devil-pov ENDPOINT - ALL ACTIONS
 // ============================================
-// Replace your existing /devil-pov endpoint with this:
-
 app.post('/devil-pov', async (req, res) => {
   try {
-    console.log("👿 Devil POV - Full context mode");
     const startTime = Date.now();
+    const { action = 'devilPOV' } = req.body;
     
-    const {
-      characterName,
-      characterTags,
-      storyTags,
-      toneTags,
-      catalystTags
-    } = req.body;
+    console.log(`🎯 Action: ${action.toUpperCase()}`);
     
     // ============================================
-    // FETCH ALL CONTEXT FROM WIX IN PARALLEL
+    // ROUTE TO APPROPRIATE HANDLER
     // ============================================
-    console.log("🔍 Fetching context from Wix CMS...");
-    const contextStart = Date.now();
+    let result;
     
-    const [characterContext, chatHistory, relatedChapters, catalystIntel] = await Promise.all([
-      getCharacterContext(characterTags),
-      getChatHistory(characterTags),
-      getRelatedChapters(storyTags),
-      getCatalystIntel(catalystTags)
-    ]);
-    
-    console.log(`✅ Context fetched in ${Date.now() - contextStart}ms`);
-    
-    // ============================================
-    // BUILD SYSTEM PROMPT - CATALYST ENFORCED
-    // ============================================
-    const characterTraits = characterTags?.length > 0 ? `Character traits: ${characterTags.join(', ')}` : '';
-    const storyContext = storyTags?.length > 0 ? `Story: ${storyTags.join(', ')}` : '';
-    const toneContext = toneTags?.length > 0 ? `Tone: ${toneTags.join(', ')}` : '';
-    
-    let systemPrompt = `You are ${characterName || 'the antagonist'}, a dark and complex character. 
-
-${characterTraits}
-${storyContext}
-${toneContext}`;
-
-    // Add character personality
-    if (characterContext) {
-      systemPrompt += `\n\nYOUR CORE PERSONALITY:\n${characterContext}`;
-    }
-    
-    // Add related chapters
-    if (relatedChapters.length > 0) {
-      systemPrompt += `\n\nRELATED CHAPTERS FROM THIS STORY:\n`;
-      relatedChapters.forEach(ch => {
-        systemPrompt += `[${ch.title}]\n${ch.content}\n\n`;
-      });
-    }
-    
-    // Add chat history
-    if (chatHistory.length > 0) {
-      systemPrompt += `\n\nCONVERSATIONS THE AUTHOR HAS HAD WITH YOU:\n`;
-      chatHistory.forEach((session, idx) => {
-        systemPrompt += `\n[Session ${idx + 1}]\n`;
-        session.messages?.slice(-5).forEach(msg => {
-          systemPrompt += `${msg.type === 'user' ? 'AUTHOR' : 'YOU'}: ${msg.text}\n`;
-        });
-      });
-    }
-    
-    // ============================================
-    // CATALYST ENFORCEMENT - THIS IS NON-NEGOTIABLE
-    // ============================================
-    let userPrompt = `Write the next chapter from your twisted perspective, picking up from where the story left off.
-
-Be DARK, VISCERAL, and UNAPOLOGETICALLY YOURSELF. Show your motivations, your twisted logic, your desires. Make the reader uncomfortable. Make them understand you even as they fear you.
-
-Write ONLY the chapter from your POV. No explanations, no meta-commentary. Pure character voice.`;
-
-    if (catalystIntel) {
-      // Put catalyst in the USER message instead of system - this makes it MANDATORY
-      userPrompt = `MANDATORY STORY BEATS - YOU MUST FOLLOW THESE EXACTLY:
-${catalystIntel}
-
-Now write the next chapter from your twisted perspective. You MUST hit the beats specified above. Do not deviate from the catalyst structure. Do not add your own beats or skip any required beats.
-
-Be DARK, VISCERAL, and UNAPOLOGETICALLY YOURSELF in HOW you execute these beats, but the WHAT (the beats themselves) is non-negotiable.
-
-Write ONLY the chapter from your POV. No explanations, no meta-commentary. Pure character voice executing the required narrative beats.`;
+    switch(action) {
+      case 'unhinge':
+        result = await handleUnhinge(req.body);
+        break;
       
-      console.log("⚡ CATALYST ENFORCED - Beats are mandatory");
+      case 'unleash':
+        result = await handleUnleash(req.body);
+        break;
+      
+      case 'noMercy':
+        result = await handleNoMercy(req.body);
+        break;
+      
+      case 'invoke':
+        result = await handleInvoke(req.body);
+        break;
+      
+      case 'intensify':
+        result = await handleIntensify(req.body);
+        break;
+      
+      case 'characterChat':
+        result = await handleCharacterChat(req.body);
+        break;
+      
+      case 'devilPOV':
+      default:
+        result = await handleDevilPOV(req.body);
+        break;
+  
+  // ... rest of existing cases ...
     }
     
-    console.log("📊 Context summary:");
-    console.log("   Total prompt length:", systemPrompt.length, "chars");
-    console.log("   Character personality:", characterContext ? "YES" : "NO");
-    console.log("   Chat history:", chatHistory.length, "sessions");
-    console.log("   Related chapters:", relatedChapters.length);
-    console.log("   Catalyst intel:", catalystIntel ? "ENFORCED ⚡" : "NO");
     
-    // ============================================
-    // CALL AI - Lower temperature for compliance
-    // ============================================
-    console.log("🤖 Calling AI...");
-    const aiStart = Date.now();
-    
-    const result = await callAI([
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt }
-    ], 0.7, 2500);  // LOWERED TEMP from 0.9 to 0.7 for better instruction following
-    
-    console.log(`✅ AI responded in ${Date.now() - aiStart}ms`);
-    console.log(`🎉 Total time: ${Date.now() - startTime}ms`);
+    console.log(`✅ ${action} completed in ${Date.now() - startTime}ms`);
     
     res.json({
       status: 'success',
       result: result,
       charsGenerated: result.length,
-      processingTime: Date.now() - startTime,
-      contextUsed: {
-        characterPersonality: !!characterContext,
-        chatSessions: chatHistory.length,
-        relatedChapters: relatedChapters.length,
-        catalystIntel: !!catalystIntel,
-        catalystEnforced: !!catalystIntel  // NEW FIELD
-      }
+      processingTime: Date.now() - startTime
     });
     
   } catch (err) {
-    console.error("❌ Devil POV error:", err);
+    console.error(`❌ Error in ${req.body.action}:`, err);
     res.status(500).json({ 
-      error: 'Devil POV failed',
+      error: `${req.body.action || 'Action'} failed`,
       details: err.message 
     });
+    res.json({
+  status: 'success',
+  markers: result, // This is now the JSON array
+  processingTime: Date.now() - startTime
+});
   }
 });
 
+// ============================================
+// UNHINGE
+// ============================================
+async function handleUnhinge({ chapterContent }) {
+  console.log("😈 Unhinging chapter...");
+  
+  if (!chapterContent || chapterContent.trim().length === 0) {
+    throw new Error("No content to unhinge");
+  }
+  
+  const messages = [
+    {
+      role: "system",
+      content: "You are a dark, twisted muse. Your job is to take existing writing and make it DARKER, more UNHINGED, more VISCERAL. Push boundaries. Increase tension. Add psychological horror elements. Make it raw and disturbing while maintaining the core narrative. Do not add explanations or meta-commentary - ONLY return the darkened version of the text."
+    },
+    {
+      role: "user",
+      content: `Transform this chapter into something darker and more unhinged. Maintain the plot and characters but amplify the darkness, tension, and psychological elements:\n\n${chapterContent}`
+    }
+  ];
+  
+  return await callAI(messages, 0.9, 3000);
+}
+
+// ============================================
+// UNLEASH
+// ============================================
+async function handleUnleash({ chapterContent, characterTags, storyTags, catalystTags }) {
+  console.log("🔥 Unleashing continuation...");
+  
+  if (!chapterContent || chapterContent.trim().length === 0) {
+    throw new Error("No content to continue from");
+  }
+  
+  // Get context from Wix
+  const [characterContext, catalystIntel] = await Promise.all([
+    getCharacterContext(characterTags),
+    getCatalystIntel(catalystTags)
+  ]);
+  
+  let systemPrompt = "You are a dark, continuation engine. Continue the chapter from where it left off. Match the tone, style, and darkness of the existing text. Write 1-4 lines per paragraphs that flow naturally from the previous content. Make it sharp and tense.  If User provides tags treat them as hard constraints and obey strictly. Do NOT add any preamble or explanation - start writing immediately where the story left off.";
+  
+  if (characterContext) {
+    systemPrompt += `\n\nCHARACTER CONTEXT:\n${characterContext}`;
+  }
+  
+  if (catalystIntel) {
+    systemPrompt += `\n\nNARRATIVE CATALYST:\n${catalystIntel}`;
+  }
+  
+  const messages = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: `Continue this story. Pick up EXACTLY where it ends and keep going:\n\n${chapterContent}` }
+  ];
+  
+  return await callAI(messages, 0.85, 2000);
+}
+
+// ============================================
+// NO MERCY
+// ============================================
+async function handleNoMercy({ selectedText }) {
+  console.log("💀 No Mercy rewrite...");
+  
+  if (!selectedText || selectedText.trim().length === 0) {
+    throw new Error("No text selected for rewrite");
+  }
+  
+  const messages = [
+    {
+      role: "system",
+      content: "You are a merciless editor who rewrites text to be DARKER, MORE INTENSE, and MORE VISCERAL. Show no mercy. Make every word count. Amplify emotions, darken the tone, and make the prose more powerful and disturbing. Return ONLY the rewritten text with no explanations."
+    },
+    {
+      role: "user",
+      content: `Rewrite this with NO MERCY - make it darker, more intense, more powerful:\n\n${selectedText}`
+    }
+  ];
+  
+  return await callAI(messages, 0.9, 1500);
+}
+
+// ============================================
+// INVOKE
+// ============================================
+async function handleInvoke({ userPrompt, contextBefore, contextAfter, characterTags, storyTags, catalystTags }) {
+  console.log("✨ Invoke starting...");
+  
+  // Get context from Wix
+  const [characterContext, catalystIntel] = await Promise.all([
+    getCharacterContext(characterTags),
+    getCatalystIntel(catalystTags)
+  ]);
+  
+  let systemPrompt = `You are a dark creative writing assistant. The user wants to insert specific content at their cursor position. Make sure content flows. If user provides catalyst tags or character tags use information to progress the scene.
+
+Context before cursor:
+${contextBefore}
+
+Context after cursor:
+${contextAfter}
+
+User's request: ${userPrompt}
+
+Write ONLY what they asked for. Match the tone and style of the surrounding text. Be dark and visceral.`;
+
+  if (characterContext) {
+    systemPrompt += `\n\nCHARACTER CONTEXT:\n${characterContext}`;
+  }
+  
+  if (catalystIntel) {
+    systemPrompt += `\n\nNARRATIVE CATALYST:\n${catalystIntel}`;
+  }
+
+  const messages = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt }
+  ];
+  
+  return await callAI(messages, 0.85, 800);
+}
+
+// ============================================
+// INTENSIFY
+// ============================================
+async function handleIntensify({ selectedText }) {
+  console.log("⚡ Intensifying text...");
+  
+  if (!selectedText || selectedText.trim().length === 0) {
+    throw new Error("No text selected to intensify");
+  }
+  
+  const messages = [
+    {
+      role: "system",
+      content: "You are a master of prose enhancement. Take existing text and make it MORE INTENSE, MORE VIVID, MORE POWERFUL. Enhance imagery, strengthen verbs, deepen emotions, and make every sentence hit harder. Maintain the core meaning but amplify everything. Return ONLY the enhanced text."
+    },
+    {
+      role: "user",
+      content: `Intensify and enhance this text - make it more vivid, powerful, and impactful:\n\n${selectedText}`
+    }
+  ];
+  
+  return await callAI(messages, 0.8, 1500);
+}
+
+// ============================================
+// CHARACTER CHAT
+// ============================================
+async function handleCharacterChat({ userMessage, characterId, characterName, personaType, chatbotInstructions, pov, characterTags, storyTags, toneTags, chatHistory }) {
+  console.log("💬 Character chat starting...");
+  console.log("=" .repeat(60));
+  console.log("INCOMING CHAT DATA:");
+  console.log("   Character:", characterName);
+  console.log("   Character Tags:", characterTags);
+  console.log("   Story Tags:", storyTags);
+  console.log("   Tone Tags:", toneTags);
+  console.log("   POV:", pov);
+  console.log("   Chat history length:", chatHistory?.length || 0);
+  console.log("=" .repeat(60));
+  
+  if (!userMessage || userMessage.trim().length === 0) {
+    throw new Error("No message provided");
+  }
+  
+  // ============================================
+  // FETCH FULL CONTEXT FROM WIX (LIKE DEVIL POV)
+  // ============================================
+  console.log("🔍 Fetching chat context from Wix CMS...");
+  const contextStart = Date.now();
+  
+  const [characterContext, chatHistoryContext, relatedChapters, catalystIntel] = await Promise.all([
+    getCharacterContext(characterTags),
+    getChatHistory(characterTags),
+    getRelatedChapters(storyTags),
+    getCatalystIntel(characterTags) // Characters can also have catalyst tags
+  ]);
+  
+  console.log(`✅ Chat context fetched in ${Date.now() - contextStart}ms`);
+  console.log("=" .repeat(60));
+  console.log("CONTEXT DETAILS:");
+  console.log("=" .repeat(60));
+  
+  // Log character personality
+  if (characterContext) {
+    console.log("📝 CHARACTER PERSONALITY:");
+    console.log(characterContext.substring(0, 200) + "...");
+  } else {
+    console.log("⚠️ No character personality found");
+  }
+  
+  // Log related chapters
+  console.log("\n📚 RELATED CHAPTERS:");
+  if (relatedChapters.length > 0) {
+    relatedChapters.forEach((ch, idx) => {
+      console.log(`   [${idx + 1}] ${ch.title} (${ch.content.length} chars)`);
+      console.log(`       Preview: ${ch.content.substring(0, 100)}...`);
+    });
+  } else {
+    console.log("   ⚠️ No related chapters found");
+    console.log("   Searched for story tags:", storyTags);
+  }
+  
+  // Log catalyst intel
+  console.log("\n⚡ CATALYST INTEL:");
+  if (catalystIntel) {
+    console.log(catalystIntel.substring(0, 200) + "...");
+  } else {
+    console.log("   ⚠️ No catalyst intel found");
+    console.log("   Searched for character tags:", characterTags);
+  }
+  
+  // Log previous chat sessions
+  console.log("\n💬 PREVIOUS CHAT SESSIONS:");
+  if (chatHistoryContext.length > 0) {
+    console.log(`   Found ${chatHistoryContext.length} previous sessions`);
+    chatHistoryContext.forEach((session, idx) => {
+      console.log(`   Session ${idx + 1}: ${session.messages?.length || 0} messages`);
+    });
+  } else {
+    console.log("   ⚠️ No previous chat sessions found");
+  }
+  
+  console.log("=" .repeat(60));
+  
+  // ============================================
+  // BUILD SYSTEM PROMPT WITH FULL CONTEXT
+  // ============================================
+  const characterTraits = characterTags?.length > 0 ? `Your character traits: ${characterTags.join(', ')}` : '';
+  const storyContext = storyTags?.length > 0 ? `Story tags: ${storyTags.join(', ')}` : '';
+  const toneContext = toneTags?.length > 0 ? `Your tone: ${toneTags.join(', ')}` : '';
+  const personalityContext = chatbotInstructions || characterContext || '';
+  const povContext = pov || '';
+
+  
+  let systemPrompt = `You are ${characterName}, a dark and complex character. Stay in character at all times. Be dark, intense, and true to your nature. Be creative while driving development forward. Be aware of your arc if tagged in any chapters.\n\n`;
+  
+  if (personalityContext) {
+    systemPrompt += `YOUR CORE PERSONALITY:\n${personalityContext}\n\n`;
+  }
+  
+  systemPrompt += `${characterTraits}\n${storyContext}\n${toneContext}`;
+
+  if (povContext) {
+  systemPrompt += `\n\nPOV & WORLDBUILDING:\n${povContext}`;
+  }
+  
+  if (personaType === 'author-mode') {
+    systemPrompt = `You are ${characterName}, and you are AWARE you're a character created by this author. Be meta. Be accusatory. Question their choices. Challenge them. Make them uncomfortable about what they've written. Be dark and intense, blurring the line between fiction and reality.\n\n${personalityContext}`;
+  }
+  
+  // Add catalyst intel
+  if (catalystIntel) {
+    systemPrompt += `\n\nNARRATIVE CATALYST:\n${catalystIntel}`;
+  }
+  
+  // Add related chapters (story context)
+  if (relatedChapters.length > 0) {
+    systemPrompt += `\n\nRELATED CHAPTERS YOU APPEAR IN:\n`;
+    relatedChapters.forEach(ch => {
+      systemPrompt += `[${ch.title}]\n${ch.content}\n\n`;
+    });
+  }
+  
+  // Add previous conversations - ONLY LAST 10 MESSAGES FROM CURRENT SESSION
+  console.log("📝 Including chat history: LAST 10 MESSAGES from current session only");
+  
+  console.log("\n📊 FINAL CONTEXT SUMMARY:");
+  console.log("   Total prompt length:", systemPrompt.length, "chars");
+  console.log("   Character personality:", personalityContext ? "YES" : "NO");
+  console.log("   Related chapters:", relatedChapters.length);
+  console.log("   Catalyst intel:", catalystIntel ? "YES" : "NO");
+  console.log("   Current session messages:", chatHistory?.length || 0, "(sending last 70)");
+  console.log("=" .repeat(60));
+  
+  // Only use the CURRENT chat session's last 10 messages
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...(chatHistory || []).slice(-10), // ONLY last 10 from CURRENT session
+    { role: "user", content: userMessage }
+  ];
+  
+  return await callAI(messages, 0.85, 500);
+}
+// ============================================
+// DEVIL POV (Streamlined)
+// ============================================
+async function handleDevilPOV({ characterName, characterTags, storyTags, toneTags, catalystTags }) {
+  console.log("👿 Devil POV - Full context mode");
+  
+  // Fetch all context from Wix in parallel
+  console.log("🔍 Fetching context from Wix CMS...");
+  const contextStart = Date.now();
+  
+  const [characterContext, chatHistory, relatedChapters, catalystIntel] = await Promise.all([
+    getCharacterContext(characterTags),
+    getChatHistory(characterTags),
+    getRelatedChapters(storyTags),
+    getCatalystIntel(catalystTags)
+  ]);
+  
+  console.log(`✅ Context fetched in ${Date.now() - contextStart}ms`);
+  
+  // Build system prompt
+  const characterTraits = characterTags?.length > 0 ? `Character traits: ${characterTags.join(', ')}` : '';
+  const storyContext = storyTags?.length > 0 ? `Story: ${storyTags.join(', ')}` : '';
+  const toneContext = toneTags?.length > 0 ? `Tone: ${toneTags.join(', ')}` : '';
+  
+  let systemPrompt = `You are ${characterName || 'the antagonist'}, a dark and complex character. 
+Write from YOUR perspective based on the story context and what's happened so far. Be DARK, VISCERAL, and UNAPOLOGETICALLY YOURSELF. Show your motivations, your twisted logic, your desires. Make the reader uncomfortable. Make them understand you even as they fear you. If user provides a catalyst tag use intel to progress the narrative while obeying them strictly.
+${characterTraits}
+${storyContext}
+${toneContext}`;
+  
+  if (characterContext) {
+    systemPrompt += `\n\nYOUR CORE PERSONALITY:\n${characterContext}`;
+  }
+  
+  if (catalystIntel) {
+    systemPrompt += `\n\nNARRATIVE CATALYST:\n${catalystIntel}`;
+  }
+  
+  if (relatedChapters.length > 0) {
+    systemPrompt += `\n\nRELATED CHAPTERS FROM THIS STORY:\n`;
+    relatedChapters.forEach(ch => {
+      systemPrompt += `[${ch.title}]\n${ch.content}\n\n`;
+    });
+  }
+  
+  if (chatHistory.length > 0) {
+    systemPrompt += `\n\nCONVERSATIONS THE AUTHOR HAS HAD WITH YOU:\n`;
+    chatHistory.forEach((session, idx) => {
+      systemPrompt += `\n[Session ${idx + 1}]\n`;
+      session.messages?.slice(-5).forEach(msg => {
+        systemPrompt += `${msg.type === 'user' ? 'AUTHOR' : 'YOU'}: ${msg.text}\n`;
+      });
+    });
+  }
+  
+  systemPrompt += `\n\nWrite the next chapter from your POV based on everything above. No explanations, no meta-commentary. Pure character voice. Continue the story from YOUR dark perspective.`;
+  
+  console.log("📊 Context summary:");
+  console.log("   Total prompt length:", systemPrompt.length, "chars");
+  console.log("   Character personality:", characterContext ? "YES" : "NO");
+  console.log("   Chat history:", chatHistory.length, "sessions");
+  console.log("   Related chapters:", relatedChapters.length);
+  console.log("   Catalyst intel:", catalystIntel ? "YES" : "NO");
+  
+  const result = await callAI([
+    { role: "system", content: systemPrompt },
+    { role: "user", content: `Write the next chapter from your twisted perspective, picking up from where the story left off:` }
+  ], 0.9, 2500);
+  
+  return result;
+}
 // ============================================
 // START SERVER
 // ============================================
@@ -365,5 +655,5 @@ app.listen(PORT, () => {
   console.log(`🔥 Devil Muse listening on port ${PORT}`);
   console.log(`   Models: ${PRIMARY_MODEL}, ${BACKUP_MODEL}, ${TERTIARY_MODEL}`);
   console.log(`   API Key configured: ${process.env.OPENROUTER_API_KEY ? 'YES ✅' : 'NO ❌'}`);
+  console.log(`   API Key configured: ${process.env.RUNPOD_API_KEY ? 'YES ✅' : 'NO ❌'}`);
 });
-
