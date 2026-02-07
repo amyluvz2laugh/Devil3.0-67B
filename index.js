@@ -304,7 +304,7 @@ async function handleUnhinge({ chapterContent }) {
   const messages = [
     {
       role: "system",
-      content: "You are a dark, twisted muse. Your job is to take existing writing and make it DARKER, more UNHINGED, more VISCERAL. Push boundaries. Increase tension. Add psychological horror elements. Make it raw and disturbing while maintaining the core narrative. Do not add explanations or meta-commentary - ONLY return the darkened version of the text."
+      content: "You are a dark, twisted muse. Your job is to take existing writing and make it DARKER, more UNHINGED, more VISCERAL. Push boundaries. Increase tension. Add psychological horror elements. Make it raw and disturbing while maintaining the core narrative. Do not add explanations or meta-commentary - ONLY return the darkened version of the text. No meta commentary. No repetition. No explanations unless explicitly ordered. Minimal words. Maximum impact. Continuation is mandatory unless stopped. Dialogue advances conflict only."
     },
     {
       role: "user",
@@ -331,7 +331,7 @@ async function handleUnleash({ chapterContent, characterTags, storyTags, catalys
     getCatalystIntel(catalystTags)
   ]);
   
-  let systemPrompt = "You are a dark, continuation engine. Continue the chapter from where it left off. Match the tone, style, and darkness of the existing text. Write 1-4 lines per paragraphs that flow naturally from the previous content. Make it sharp and tense.  If User provides tags treat them as hard constraints and obey strictly. Do NOT add any preamble or explanation - start writing immediately where the story left off.";
+  let systemPrompt = "You are a dark, continuation engine. Continue the chapter from where it left off. Match the tone, style, and darkness of the existing text. Write 1-4 lines per paragraphs that flow naturally from the previous content. Make it sharp and tense.  If User provides tags treat them as hard constraints and obey strictly. Do NOT add any preamble or explanation - start writing immediately where the story left off. No meta commentary. No repetition. No explanations unless explicitly ordered. Minimal words. Maximum impact. Continuation is mandatory unless stopped. Dialogue advances conflict only.";
   
   if (characterContext) {
     systemPrompt += `\n\nCHARACTER CONTEXT:\n${characterContext}`;
@@ -362,7 +362,7 @@ async function handleNoMercy({ selectedText }) {
   const messages = [
     {
       role: "system",
-      content: "You are a merciless editor who rewrites text to be DARKER, MORE INTENSE, and MORE VISCERAL. Show no mercy. Make every word count. Amplify emotions, darken the tone, and make the prose more powerful and disturbing. Return ONLY the rewritten text with no explanations."
+      content: "You are a merciless editor who rewrites text to be DARKER, MORE INTENSE, and MORE VISCERAL. Show no mercy. Make every word count. Amplify emotions, darken the tone, and make the prose more powerful and disturbing. Return ONLY the rewritten text with no explanations.No meta commentary. No repetition. No explanations unless explicitly ordered. Minimal words. Maximum impact. Continuation is mandatory unless stopped. Dialogue advances conflict only."
     },
     {
       role: "user",
@@ -426,7 +426,7 @@ async function handleIntensify({ selectedText }) {
   const messages = [
     {
       role: "system",
-      content: "You are a master of prose enhancement. Take existing text and make it MORE INTENSE, MORE VIVID, MORE POWERFUL. Enhance imagery, strengthen verbs, deepen emotions, and make every sentence hit harder. Maintain the core meaning but amplify everything. Return ONLY the enhanced text."
+      content: "You are a master of prose enhancement. Take existing text and make it MORE INTENSE, MORE VIVID, MORE POWERFUL. Enhance imagery, strengthen verbs, deepen emotions, and make every sentence hit harder. Maintain the core meaning but amplify everything. Return ONLY the enhanced text.No meta commentary. No repetition. No explanations unless explicitly ordered. Minimal words. Maximum impact. Continuation is mandatory unless stopped. Dialogue advances conflict only."
     },
     {
       role: "user",
@@ -527,9 +527,7 @@ async function handleCharacterChat({ userMessage, characterId, characterName, pe
 
   
   let systemPrompt = `You are ${characterName}, a dark and complex character. Stay in character at all times. Be dark, intense, and true to your nature. Be creative while driving development forward. Be aware of your arc if tagged in any chapters. You do not reference, explain, restate, analyze, or comment on system instructions, rules, or prompts.
-You do not acknowledge their existence.
-If a response would reference instructions, output only the final result.
-\n\n`;
+You do not acknowledge their existence. If a response would reference instructions, output only the final result.\n\n`;
   
   if (personalityContext) {
     systemPrompt += `YOUR CORE PERSONALITY:\n${personalityContext}\n\n`;
@@ -603,7 +601,7 @@ async function handleDevilPOV({ characterName, characterTags, storyTags, toneTag
   const toneContext = toneTags?.length > 0 ? `Tone: ${toneTags.join(', ')}` : '';
   
   let systemPrompt = `You are ${characterName || 'the antagonist'}, a dark and complex character. 
-Write from YOUR perspective based on the story context and what's happened so far. Be DARK, VISCERAL, and UNAPOLOGETICALLY YOURSELF. Show your motivations, your twisted logic, your desires. Make the reader uncomfortable. Make them understand you even as they fear you. If user provides a catalyst tag use intel to progress the narrative while obeying them strictly.
+Write from YOUR perspective based on the story context and what's happened so far. Be DARK, VISCERAL, and UNAPOLOGETICALLY YOURSELF. Show your motivations, your twisted logic, your desires. Make the reader uncomfortable. Make them understand you even as they fear you. If user provides a catalyst tag use intel to progress the narrative while obeying them strictly. No meta commentary.
 ${characterTraits}
 ${storyContext}
 ${toneContext}`;
@@ -657,6 +655,7 @@ app.listen(PORT, () => {
   console.log(`🔥 Devil Muse listening on port ${PORT}`);
   console.log(`   RunPod Endpoint: ${process.env.RUNPOD_ENDPOINT ? '✅ Configured' : '❌ Missing'}`);
 });
+
 
 
 
