@@ -10,19 +10,14 @@ const WIX_API_KEY = process.env.WIX_API_KEY;
 const WIX_ACCOUNT_ID = process.env.WIX_ACCOUNT_ID;
 const WIX_SITE_ID = process.env.WIX_SITE_ID;
 
-// Model configuration
-const PRIMARY_MODEL = "deepseek/deepseek-v3.1-terminus";
-const BACKUP_MODEL = "deepseek/deepseek-v3.2";
-const TERTIARY_MODEL = "mistralai/mistral-large";
-
 // ============================================
-// AI CALL WITH FALLBACK
+// AI CALL - NO API KEY NEEDED
 // ============================================
 async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
-  const endpoint = process.env.RUNPOD_ENDPOINT; // Just the endpoint
+  const endpoint = process.env.RUNPOD_ENDPOINT;
   
   if (!endpoint) {
-    throw new Error("No endpoint configured");
+    throw new Error("No RunPod endpoint configured");
   }
   
   try {
@@ -32,7 +27,6 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // No Authorization header needed!
         'HTTP-Referer': 'https://amygonzalez305.wixsite.com/the-draft-reaper/devil-muse-server',
         'X-Title': 'Devil Muse'
       },
@@ -43,23 +37,20 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
       })
     });
     
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`❌ ${model} failed:`, errorText);
-        continue;
-      }
-      
-      const data = await response.json();
-      console.log(`✅ Success with ${model}`);
-      return data.choices[0].message.content;
-      
-    } catch (error) {
-      console.error(`❌ ${model} error:`, error.message);
-      continue;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ RunPod request failed:`, errorText);
+      throw new Error(`RunPod API error: ${response.status} - ${errorText}`);
     }
+    
+    const data = await response.json();
+    console.log(`✅ Response received from your model`);
+    return data.choices[0].message.content;
+    
+  } catch (error) {
+    console.error(`❌ Error calling RunPod:`, error.message);
+    throw error;
   }
-  
-  throw new Error("All models failed");
 }
 // ============================================
 // QUERY WIX CMS
@@ -650,7 +641,7 @@ ${toneContext}`;
 const PORT = process.env.PORT || 3333;
 app.listen(PORT, () => {
   console.log(`🔥 Devil Muse listening on port ${PORT}`);
-  console.log(`   Models: ${PRIMARY_MODEL}, ${BACKUP_MODEL}, ${TERTIARY_MODEL}`);
-  console.log(`   Endpoint configured: ${process.env.RUNPOD_ENDPOINT ? 'YES ✅' : 'NO ❌'}`);
+  console.log(`   RunPod Endpoint: ${process.env.RUNPOD_ENDPOINT ? '✅ Configured' : '❌ Missing'}`);
 });
+
 
