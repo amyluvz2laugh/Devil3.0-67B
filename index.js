@@ -19,32 +19,29 @@ const TERTIARY_MODEL = "mistralai/mistral-large";
 // AI CALL WITH FALLBACK
 // ============================================
 async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
-  const models = [PRIMARY_MODEL, BACKUP_MODEL, TERTIARY_MODEL];
-  const apiKey = process.env.RUNPOD_API_KEY; // <- Changed this too
+  const endpoint = process.env.RUNPOD_ENDPOINT; // Just the endpoint
   
-  if (!apiKey) {
-    throw new Error("No API key configured");
+  if (!endpoint) {
+    throw new Error("No endpoint configured");
   }
   
-  for (const model of models) {
-    try {
-      console.log(`🤖 Trying model: ${model}`);
-      
-      const response = await fetch(process.env.RUNPOD_ENDPOINT, { // <- YES, this line
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'HTTP-Referer': 'https://amygonzalez305.wixsite.com/the-draft-reaper/devil-muse-server',
-          'X-Title': 'Devil Muse'
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: messages,
-          temperature: temperature,
-          max_tokens: maxTokens
-        })
-      });
+  try {
+    console.log(`🤖 Calling your model at ${endpoint}`);
+    
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // No Authorization header needed!
+        'HTTP-Referer': 'https://amygonzalez305.wixsite.com/the-draft-reaper/devil-muse-server',
+        'X-Title': 'Devil Muse'
+      },
+      body: JSON.stringify({
+        messages: messages,
+        temperature: temperature,
+        max_tokens: maxTokens
+      })
+    });
     
       if (!response.ok) {
         const errorText = await response.text();
@@ -654,6 +651,6 @@ const PORT = process.env.PORT || 3333;
 app.listen(PORT, () => {
   console.log(`🔥 Devil Muse listening on port ${PORT}`);
   console.log(`   Models: ${PRIMARY_MODEL}, ${BACKUP_MODEL}, ${TERTIARY_MODEL}`);
-  console.log(`   API Key configured: ${process.env.OPENROUTER_API_KEY ? 'YES ✅' : 'NO ❌'}`);
-  console.log(`   API Key configured: ${process.env.RUNPOD_API_KEY ? 'YES ✅' : 'NO ❌'}`);
+  console.log(`   Endpoint configured: ${process.env.RUNPOD_ENDPOINT ? 'YES ✅' : 'NO ❌'}`);
 });
+
