@@ -53,7 +53,14 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
     
     const data = await response.json();
     console.log(`✅ Response received from KoboldCpp`);
-    return data.results[0].text.trim();
+    if (data.results && data.results[0]) {
+  return data.results[0].text.trim();
+} else if (data.text) {
+  return data.text.trim();
+} else {
+  console.log("Full KoboldCpp response:", JSON.stringify(data));
+  throw new Error("Unexpected response format from KoboldCpp");
+};
     
   } catch (error) {
     console.error(`❌ Error calling KoboldCpp:`, error.message);
@@ -260,10 +267,7 @@ app.post('/devil-pov', async (req, res) => {
       default:
         result = await handleDevilPOV(req.body);
         break;
-  
-  // ... rest of existing cases ...
     }
-    
     
     console.log(`✅ ${action} completed in ${Date.now() - startTime}ms`);
     
@@ -280,11 +284,6 @@ app.post('/devil-pov', async (req, res) => {
       error: `${req.body.action || 'Action'} failed`,
       details: err.message 
     });
-    res.json({
-  status: 'success',
-  markers: result, // This is now the JSON array
-  processingTime: Date.now() - startTime
-});
   }
 });
 
@@ -651,6 +650,7 @@ app.listen(PORT, () => {
   console.log(`🔥 Devil Muse listening on port ${PORT}`);
   console.log(`   RunPod Endpoint: ${process.env.RUNPOD_ENDPOINT ? '✅ Configured' : '❌ Missing'}`);
 });
+
 
 
 
