@@ -52,20 +52,18 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
     }
     
     const data = await response.json();
-    console.log(`✅ Response received from KoboldCpp`);
-    if (data.results && data.results[0]) {
+console.log("✅ Got response from KoboldCpp");
+
+// KoboldCpp returns response in the "response" field
+if (data.response) {
+  return data.response.trim();
+} else if (data.results && data.results[0]) {
   return data.results[0].text.trim();
 } else if (data.text) {
   return data.text.trim();
 } else {
-  console.log("Full KoboldCpp response:", JSON.stringify(data));
+  console.error("❌ Unknown KoboldCpp format:", JSON.stringify(data));
   throw new Error("Unexpected response format from KoboldCpp");
-};
-    
-  } catch (error) {
-    console.error(`❌ Error calling KoboldCpp:`, error.message);
-    throw error;
-  }
 }
 // ============================================
 // QUERY WIX CMS
@@ -650,6 +648,7 @@ app.listen(PORT, () => {
   console.log(`🔥 Devil Muse listening on port ${PORT}`);
   console.log(`   RunPod Endpoint: ${process.env.RUNPOD_ENDPOINT ? '✅ Configured' : '❌ Missing'}`);
 });
+
 
 
 
