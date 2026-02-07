@@ -42,7 +42,8 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
         temperature: temperature,
         max_length: maxTokens,
         stop_sequence: ["User:", "\n\n\n"]
-      })
+      }),
+  signal: AbortSignal.timeout(180000) // 3 minutes - give the 67B time to work
     });
     
     if (!response.ok) {
@@ -655,6 +656,7 @@ app.listen(PORT, () => {
   console.log(`🔥 Devil Muse listening on port ${PORT}`);
   console.log(`   RunPod Endpoint: ${process.env.RUNPOD_ENDPOINT ? '✅ Configured' : '❌ Missing'}`);
 });
+
 
 
 
