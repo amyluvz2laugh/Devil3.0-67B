@@ -27,7 +27,7 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://amygonzalez305.wixsite.com/the-draft-reaper/devil-muse-server',
+        'HTTP-Referer': 'https://amygonzalez305.wixsite.com/the-draft-reaper/umbral-archives-manuscripts',
         'X-Title': 'Devil Muse'
       },
       body: JSON.stringify({
@@ -643,5 +643,6 @@ app.listen(PORT, () => {
   console.log(`🔥 Devil Muse listening on port ${PORT}`);
   console.log(`   RunPod Endpoint: ${process.env.RUNPOD_ENDPOINT ? '✅ Configured' : '❌ Missing'}`);
 });
+
 
 
