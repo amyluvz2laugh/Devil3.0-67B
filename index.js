@@ -38,25 +38,12 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-  prompt: prompt,
-  temperature: temperature,
-  max_length: maxTokens,
-  stop_sequence: [
-    "User:", 
-    "\n\n\n",
-    "###",           // Catches common separators
-    "Prompt",        // Stops meta commentary
-    "Note:",         // Stops explanations
-    "Here's",        // Stops "Here's the continuation..."
-    "I've",          // Stops "I've written..."
-    "This",          // Stops "This section..."
-    "\n\nUser",
-    "\n\nAssistant"
-  ],
-  rep_pen: 1.1,     // Repetition penalty - reduces repetition
-  top_p: 0.9,       // Nucleus sampling - helps coherence
-  top_k: 40         // Limits vocabulary per step
-})
+        prompt: prompt,
+        temperature: temperature,
+        max_length: maxTokens,
+        stop_sequence: ["User:", "\n\n\n"]
+      })
+    });
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -670,6 +657,7 @@ app.listen(PORT, () => {
   console.log(`🔥 Devil Muse listening on port ${PORT}`);
   console.log(`   RunPod Endpoint: ${process.env.RUNPOD_ENDPOINT ? '✅ Configured' : '❌ Missing'}`);
 });
+
 
 
 
