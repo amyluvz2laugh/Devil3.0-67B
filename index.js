@@ -21,34 +21,42 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
   }
   
   try {
-    console.log(`🤖 Calling your model at ${endpoint}`);
+    console.log(`🤖 Calling KoboldCpp at ${endpoint}`);
+    
+    // Convert messages to a single prompt string for KoboldCpp
+    let prompt = "";
+    messages.forEach(msg => {
+      if (msg.role === "system") prompt += `${msg.content}\n\n`;
+      else if (msg.role === "user") prompt += `User: ${msg.content}\n`;
+      else if (msg.role === "assistant") prompt += `Assistant: ${msg.content}\n`;
+    });
+    prompt += "Assistant:";
     
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://amygonzalez305.wixsite.com/the-draft-reaper/umbral-archives-manuscripts',
-        'X-Title': 'Devil Muse'
       },
       body: JSON.stringify({
-        messages: messages,
+        prompt: prompt,
         temperature: temperature,
-        max_tokens: maxTokens
+        max_length: maxTokens,
+        stop_sequence: ["User:", "\n\n\n"]
       })
     });
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ RunPod request failed:`, errorText);
-      throw new Error(`RunPod API error: ${response.status} - ${errorText}`);
+      console.error(`❌ KoboldCpp request failed:`, errorText);
+      throw new Error(`KoboldCpp API error: ${response.status}`);
     }
     
     const data = await response.json();
-    console.log(`✅ Response received from your model`);
-    return data.choices[0].message.content;
+    console.log(`✅ Response received from KoboldCpp`);
+    return data.results[0].text.trim();
     
   } catch (error) {
-    console.error(`❌ Error calling RunPod:`, error.message);
+    console.error(`❌ Error calling KoboldCpp:`, error.message);
     throw error;
   }
 }
@@ -643,6 +651,7 @@ app.listen(PORT, () => {
   console.log(`🔥 Devil Muse listening on port ${PORT}`);
   console.log(`   RunPod Endpoint: ${process.env.RUNPOD_ENDPOINT ? '✅ Configured' : '❌ Missing'}`);
 });
+
 
 
 
